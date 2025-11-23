@@ -455,6 +455,17 @@
                     <div class="menu-label">About Bitbar</div>
                 </div>
             </div>
+            <div class="menu-item" onclick="window.pyObj.quitApp()">
+                <div class="menu-icon" style="color: var(--trend-red);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <div class="menu-label" style="color: var(--trend-red);">Quit Bitbar</div>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -550,6 +561,29 @@
                 icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
             }
         }
+
+        function sendHeight() {
+            // Get the full scroll height of the container plus some padding for shadow/border
+            const container = document.querySelector('.container');
+            if (container) {
+                const height = container.offsetHeight;
+                // Add a small buffer just in case, though offsetHeight should be enough for the block
+                if (window.pyObj) {
+                    window.pyObj.resizeWindow(height);
+                }
+            }
+        }
+
+        // Call on load and resize
+        window.addEventListener('load', () => {
+            sendHeight();
+            // Retry after a moment to ensure fonts/layout are stable
+            setTimeout(sendHeight, 100);
+        });
+
+        // Update height when content might change
+        const observer = new ResizeObserver(sendHeight);
+        observer.observe(document.body);
     </script>
 </body>
 

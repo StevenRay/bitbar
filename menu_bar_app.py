@@ -1,6 +1,7 @@
 import rumps
 import requests
 import os
+import sys
 import json
 import threading
 import webbrowser
@@ -20,6 +21,17 @@ def debug_print(msg):
     if DEBUG:
         print(msg)
 
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller/py2app"""
+    if getattr(sys, 'frozen', False):
+        # Running as compiled app
+        # The executable is in Contents/MacOS, resources are in Contents/Resources
+        base_path = os.path.join(os.path.dirname(sys.executable), '..', 'Resources')
+    else:
+        # Running from source
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
 class PopoverController(NSObject):
     def initWithApp_(self, app):
         self = objc.super(PopoverController, self).init()
@@ -38,7 +50,9 @@ class PopoverController(NSObject):
                 changeCurrency: function(c) { window.webkit.messageHandlers.controller.postMessage({action: 'changeCurrency', currency: c}); },
                 updatePrice: function() { window.webkit.messageHandlers.controller.postMessage({action: 'updatePrice'}); },
                 openWebsite: function() { window.webkit.messageHandlers.controller.postMessage({action: 'openWebsite'}); },
-                openAbout: function() { window.webkit.messageHandlers.controller.postMessage({action: 'openAbout'}); }
+                openAbout: function() { window.webkit.messageHandlers.controller.postMessage({action: 'openAbout'}); },
+                quitApp: function() { window.webkit.messageHandlers.controller.postMessage({action: 'quitApp'}); },
+                resizeWindow: function(h) { window.webkit.messageHandlers.controller.postMessage({action: 'resizeWindow', height: h}); }
             };
             """
             user_script = WKUserScript.alloc().initWithSource_injectionTime_forMainFrameOnly_(
@@ -48,11 +62,15 @@ class PopoverController(NSObject):
             user_content.addScriptMessageHandler_name_(self, "controller")
             config.setUserContentController_(user_content)
             
-            self.webview = WKWebView.alloc().initWithFrame_configuration_(NSMakeRect(0, 0, 320, 480), config)
+            self.webview = WKWebView.alloc().initWithFrame_configuration_(NSMakeRect(0, 0, 320, 600), config)
             
             # Load HTML
-            html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui", "index.html")
+            # Load HTML
+            html_path = get_resource_path(os.path.join("ui", "index.html"))
+            # Add timestamp to force reload and bypass cache
+            import time
             url = NSURL.fileURLWithPath_(html_path)
+            url_with_query = NSURL.URLWithString_relativeToURL_(f"?t={int(time.time())}", url)
             self.webview.loadFileURL_allowingReadAccessToURL_(url, url.URLByDeletingLastPathComponent())
             
             # Set Content View Controller
@@ -88,8 +106,17 @@ class PopoverController(NSObject):
         elif action == 'openWebsite':
             webbrowser.open(WEBSITE_URL)
         elif action == 'openAbout':
-            icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bitcoin_tracker_icon.icns")
+            icon_path = get_resource_path("bitcoin_tracker_icon.icns")
             rumps.alert(title="BitBar", message="Version 1.0.0\n\nMade with ❤️ by Stoodio™", icon_path=icon_path)
+        elif action == 'quitApp':
+            rumps.quit_application()
+        elif action == 'resizeWindow':
+            height = body.get('height')
+            if height:
+                from Foundation import NSSize
+                current_size = self.popover.contentSize()
+                new_size = NSSize(current_size.width, height)
+                self.popover.setContentSize_(new_size)
 
 class MenuBarApp(rumps.App):
     def __init__(self):
@@ -101,7 +128,7 @@ class MenuBarApp(rumps.App):
         }
         
         # Set App Icon (Dock and Alerts)
-        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bitcoin_tracker_icon.icns")
+        icon_path = get_resource_path("bitcoin_tracker_icon.icns")
         if os.path.exists(icon_path):
             image = NSImage.alloc().initWithContentsOfFile_(icon_path)
             NSApplication.sharedApplication().setApplicationIconImage_(image)

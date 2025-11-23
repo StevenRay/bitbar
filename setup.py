@@ -7,9 +7,9 @@ OPTIONS = {
     'argv_emulation': True,
     'packages': ['rumps', 'requests'],
     'plist': {
-        'CFBundleName': 'Bitcoin Menu Bar App',
-        'CFBundleDisplayName': 'Bitcoin Menu Bar App',
-        'CFBundleGetInfoString': 'Bitcoin Menu Bar App',
+        'CFBundleName': 'Bitbar',
+        'CFBundleDisplayName': 'Bitbar',
+        'CFBundleGetInfoString': 'Bitbar',
         'CFBundleVersion': '1.0.0',
         'CFBundleShortVersionString': '1.0',
         'CFBundleIdentifier': 'com.defendersoftheinternet.bitcoinmenubar',
