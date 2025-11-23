@@ -12,11 +12,10 @@ To build and run this application, you'll need Python and `py2app` installed.
     ```bash
     pip install -r requirements.txt
     ```
-    *(Note: A `requirements.txt` file does not exist. I will create one based on `setup.py`)*
 
 2.  **Run in Development Mode:**
     ```bash
-    python menu_bar_app.py
+    python3 menu_bar_app.py
     ```
 
 3.  **Build the Application:**

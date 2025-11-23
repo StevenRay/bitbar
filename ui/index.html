@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Tracker</title>
+    <style>
+        :root {
+            /* Brand Colors */
+            --bitcoin-orange: #F7931A;
+            --active-blue: #3B82F6;
+            --active-blue-dark: #2563EB;
+            --trend-green: #22C55E;
+            --trend-red: #EF4444;
+
+            /* Light Mode (Default) */
+            --surface-bg: rgba(255, 255, 255, 0.9);
+            --primary-text: #1E293B;
+            --secondary-text: #64748B;
+            --border-color: #E2E8F0;
+            --hover-bg: rgba(0, 0, 0, 0.05);
+
+            /* Menu Bar */
+            --menubar-bg: rgba(30, 30, 30, 0.8);
+            --menubar-text: #FFFFFF;
+            --icon-color: #EAB308;
+        }
+
+        body.dark-mode {
+            /* Dark Mode */
+            --surface-bg: rgba(15, 23, 42, 0.9);
+            --primary-text: #FFFFFF;
+            --secondary-text: #94A3B8;
+            --border-color: #334155;
+            --hover-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--surface-bg);
+            color: var(--primary-text);
+            user-select: none;
+            cursor: default;
+            width: 320px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Header Section */
+        .header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--surface-bg);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .coin-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .coin-icon {
+            width: 32px;
+            height: 32px;
+            background-color: var(--bitcoin-orange);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .coin-name {
+            font-size: 13px;
+            color: var(--secondary-text);
+            font-weight: 500;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-text);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .refresh-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2px;
+        }
+
+        .price-container {
+            margin-top: 4px;
+        }
+
+        .current-price {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.025em;
+            margin-bottom: 6px;
+            color: var(--primary-text);
+        }
+
+        .price-change {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--trend-green);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .price-change.negative {
+            color: var(--trend-red);
+        }
+
+        .price-change svg {
+            width: 14px;
+            height: 14px;
+            stroke-width: 2px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            padding: 12px;
+            text-align: center;
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-item:nth-child(2n) {
+            border-right: none;
+        }
+
+        .stat-item:nth-child(3),
+        .stat-item:nth-child(4) {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+            opacity: 0.5;
+        }
+
+        .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Currency Section */
+        .section {
+            padding: 12px;
+            background-color: var(--surface-bg);
+        }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .currency-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .currency-btn {
+            background-color: rgba(0, 0, 0, 0.05);
+            border: 1px solid transparent;
+            padding: 6px;
+            height: 28px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--primary-text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        body.dark-mode .currency-btn {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .currency-btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .currency-btn.active {
+            background-color: var(--active-blue);
+            border-color: var(--active-blue-dark);
+            color: white;
+        }
+
+        /* Menu List */
+        .menu-list {
+            padding: 8px 12px;
+            background-color: var(--surface-bg);
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            height: 36px;
+            cursor: pointer;
+            color: var(--primary-text);
+            text-decoration: none;
+            font-size: 13px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .menu-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .menu-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .menu-icon {
+            width: 14px;
+            height: 14px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--secondary-text);
+        }
+
+        .menu-icon svg {
+            width: 14px;
+            height: 14px;
+            stroke-width: 2px;
+        }
+
+        .menu-label {
+            flex-grow: 1;
+            font-weight: 500;
+        }
+
+        .menu-action {
+            font-size: 11px;
+            background-color: var(--hover-bg);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--secondary-text);
+        }
+
+        .menu-row {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .menu-item.half {
+            flex: 1;
+            justify-content: center;
+            font-size: 11px;
+            padding: 8px 4px;
+        }
+
+        .menu-item.half .menu-icon {
+            margin-right: 6px;
+            width: 12px;
+            height: 12px;
+        }
+
+        .menu-item.half .menu-icon svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .menu-item.half .menu-label {
+            flex-grow: 0;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 12px;
+            text-align: center;
+            font-size: 9px;
+            font-weight: 400;
+            color: var(--secondary-text);
+            background-color: var(--surface-bg);
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <div class="coin-info">
+                    <div class="coin-icon">₿</div>
+                    <div class="coin-name">Bitcoin</div>
+                </div>
+                <button class="refresh-btn" onclick="window.pyObj.updatePrice()" title="Refresh">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M23 4v6h-6"></path>
+                        <path d="M1 20v-6h6"></path>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="price-container">
+                <div class="current-price" id="price">Loading...</div>
+                <div class="price-change" id="change">
+                    <svg id="trend-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                        <polyline points="17 6 23 6 23 12"></polyline>
+                    </svg>
+                    <span id="change-text">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label">24h High</div>
+                <div class="stat-value" id="high">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">24h Low</div>
+                <div class="stat-value" id="low">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Market Cap</div>
+                <div class="stat-value" id="market-cap">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Volume</div>
+                <div class="stat-value" id="volume">--</div>
+            </div>
+        </div>
+
+        <!-- Currency -->
+        <div class="section">
+            <div class="section-title">Currency</div>
+            <div class="currency-grid" id="currency-grid">
+                <button class="currency-btn active" onclick="setCurrency('usd')">USD</button>
+                <button class="currency-btn" onclick="setCurrency('eur')">EUR</button>
+                <button class="currency-btn" onclick="setCurrency('gbp')">GBP</button>
+                <button class="currency-btn" onclick="setCurrency('jpy')">JPY</button>
+                <button class="currency-btn" onclick="setCurrency('cad')">CAD</button>
+                <button class="currency-btn" onclick="setCurrency('aud')">AUD</button>
+                <button class="currency-btn" onclick="setCurrency('krw')">KRW</button>
+                <button class="currency-btn" onclick="setCurrency('brl')">BRL</button>
+                <button class="currency-btn" onclick="setCurrency('try')">TRY</button>
+            </div>
+        </div>
+
+        <!-- Menu -->
+        <div class="menu-list">
+            <div class="menu-item" onclick="toggleTheme()">
+                <div class="menu-icon">
+                    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </div>
+                <div class="menu-label">Appearance</div>
+                <div class="menu-action" id="theme-label">LIGHT</div>
+            </div>
+            <div class="menu-row">
+                <div class="menu-item half" onclick="window.pyObj.openWebsite()">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </div>
+                    <div class="menu-label">Made by Stoodio™</div>
+                </div>
+                <div class="menu-item half" onclick="window.pyObj.openAbout()">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </div>
+                    <div class="menu-label">About Bitbar</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Data provided by CoinGecko • Updates every 60 seconds
+        </div>
+    </div>
+
+    <script>
+        let currentCurrency = 'usd';
+        const currencies = {
+            'usd': '$', 'eur': '€', 'gbp': '£',
+            'jpy': '¥', 'cad': 'C$', 'aud': 'A$',
+            'krw': '₩', 'brl': 'R$', 'try': '₺'
+        };
+
+        function updateData(data) {
+            const symbol = currencies[currentCurrency] || '$';
+
+            // Update Price
+            const priceEl = document.getElementById('price');
+            priceEl.textContent = `${symbol}${data.current_price.toLocaleString()}`;
+            priceEl.style.color = '';
+
+            // Update Change with trend icon
+            const changeEl = document.getElementById('change');
+            const changeText = document.getElementById('change-text');
+            const trendIcon = document.getElementById('trend-icon');
+            const change = data.price_change_percentage_24h;
+            const sign = change >= 0 ? '+' : '';
+
+            changeText.textContent = `${sign}${change.toFixed(2)}% (24h)`;
+            changeEl.className = `price-change ${change < 0 ? 'negative' : ''}`;
+
+            // Update trend icon
+            if (change >= 0) {
+                trendIcon.innerHTML = '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>';
+            } else {
+                trendIcon.innerHTML = '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>';
+            }
+
+            // Update Stats
+            document.getElementById('high').textContent = `${symbol}${data.high_24h.toLocaleString()}`;
+            document.getElementById('low').textContent = `${symbol}${data.low_24h.toLocaleString()}`;
+            document.getElementById('market-cap').textContent = formatCompact(data.market_cap);
+            document.getElementById('volume').textContent = formatCompact(data.total_volume);
+        }
+
+        function showError(msg) {
+            const priceEl = document.getElementById('price');
+            priceEl.textContent = msg;
+            priceEl.style.color = 'var(--trend-red)';
+
+            // Reset after 3 seconds
+            setTimeout(() => {
+                priceEl.textContent = 'Loading...';
+                priceEl.style.color = '';
+            }, 3000);
+        }
+
+        function formatCompact(num) {
+            return Intl.NumberFormat('en-US', {
+                notation: "compact",
+                maximumFractionDigits: 1
+            }).format(num);
+        }
+
+        function setCurrency(curr) {
+            currentCurrency = curr;
+            // Update buttons
+            document.querySelectorAll('.currency-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase() === curr);
+            });
+            // Call Python to update data
+            if (window.pyObj) {
+                window.pyObj.changeCurrency(curr);
+            }
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+
+            const label = document.getElementById('theme-label');
+            const icon = document.getElementById('theme-icon');
+
+            if (document.body.classList.contains('dark-mode')) {
+                label.textContent = 'DARK';
+                // Moon icon
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            } else {
+                label.textContent = 'LIGHT';
+                // Sun icon
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            }
+        }
+    </script>
+</body>
+
+</html>

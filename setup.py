@@ -1,7 +1,7 @@
 from setuptools import setup
 
 APP = ['menu_bar_app.py']
-DATA_FILES = []
+DATA_FILES = ['ui']
 OPTIONS = {
     'iconfile': 'bitcoin_tracker_icon.icns',
     'argv_emulation': True,
