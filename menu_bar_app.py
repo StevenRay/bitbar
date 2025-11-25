@@ -3,6 +3,7 @@ import requests
 import os
 import sys
 import json
+import time
 import threading
 import webbrowser
 import objc
@@ -92,7 +93,7 @@ class PopoverController(NSObject):
                 sender.bounds(), sender, 1  # NSMinYEdge
             )
             # Trigger update when opened
-            self.app.update_price(None)
+            self.app.update_price(None, force=False)
 
     def userContentController_didReceiveScriptMessage_(self, userContentController, message):
         body = message.body()
@@ -102,7 +103,7 @@ class PopoverController(NSObject):
             self.app.change_currency(body.get('currency'))
         elif action == 'updatePrice':
             debug_print("Received updatePrice request from JS")
-            self.app.update_price(None)
+            self.app.update_price(None, force=True)
         elif action == 'openWebsite':
             webbrowser.open(WEBSITE_URL)
         elif action == 'openAbout':
@@ -136,8 +137,10 @@ class MenuBarApp(rumps.App):
         # Initialize Popover Controller
         self.popover_controller = PopoverController.alloc().initWithApp_(self)
         
+        self.last_update_time = 0
+        
         # Initial update
-        self.update_price(None)
+        self.update_price(None, force=True)
         
         # Start timer
         self.timer = rumps.Timer(self.update_price, UPDATE_INTERVAL)
@@ -174,10 +177,15 @@ class MenuBarApp(rumps.App):
         """Change the display currency"""
         debug_print(f"Changing currency to: {currency}")
         self.currency = currency
-        self.update_price(None)
+        self.update_price(None, force=True)
 
-    def update_price(self, _):
+    def update_price(self, _, force=False):
         """Fetch price data in a background thread"""
+        # Check cache if not forced
+        if not force and time.time() - self.last_update_time < UPDATE_INTERVAL:
+            debug_print("Using cached data")
+            return
+
         t = threading.Thread(target=self._fetch_price, daemon=True)
         t.start()
 
@@ -191,22 +199,23 @@ class MenuBarApp(rumps.App):
             if response.status_code == 200:
                 data = response.json()
                 if data and len(data) > 0:
+                    self.last_update_time = time.time()
                     self._update_ui(data[0])
                 else:
                     print("Error: Empty data received from API")
                     self._send_error_to_ui("No data available")
             elif response.status_code == 429:
-                print("Error: API rate limit exceeded (429)")
-                self._send_error_to_ui("Rate limit exceeded. Please wait...")
+                print("Error: API rate limit exceeded (429) - Silently ignoring")
+                # Do not update UI, keep old data
             else:
                 print(f"Error: API returned {response.status_code}")
                 self._send_error_to_ui(f"API Error {response.status_code}")
         except requests.exceptions.Timeout:
             print("Error: Request timeout")
-            self._send_error_to_ui("Request timeout")
+            # self._send_error_to_ui("Request timeout") # Optional: make this silent too if frequent
         except requests.exceptions.RequestException as e:
             print(f"Network error: {e}")
-            self._send_error_to_ui("Network error")
+            # self._send_error_to_ui("Network error")
         except Exception as e:
             print(f"Unexpected error in _fetch_price: {e}")
             self._send_error_to_ui("Unexpected error")
